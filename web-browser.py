@@ -70,28 +70,73 @@ def lex(body):
             text +=c
     return text            
 
-WIDTH, HEIGHT= 800,600
-class Browser:
+
+HSTEP, VSTEP= 13,18
+
+def layout(text):
     
-    def __init__(self):
-        self.window= tkinter.Tk()
-        self.canvas= tkinter.Canvas(self.window,width=WIDTH,height=HEIGHT)
-        self.canvas.pack()
-        
-        
-    def load(self,url):
-        body= url.request()
-        text=lex(body)
-        
-        HSTEP, VSTEP= 13,18
-        cursor_x, cursor_y= HSTEP, VSTEP
-        
-        for c in text:
-            self.canvas.create_text(cursor_x,cursor_y,text=c)
+    display_list=[]
+    cursor_x, cursor_y= HSTEP, VSTEP
+    
+    for c in text:
+        if c=="\n":
+            cursor_y += VSTEP*1.5
+            cursor_x= HSTEP        
+        else:
+            display_list.append((cursor_x,cursor_y,c))
             cursor_x += HSTEP
             if cursor_x>= WIDTH-HSTEP:
                 cursor_y += VSTEP
                 cursor_x = HSTEP
+    return display_list
+
+
+
+SCROLL_STEP=100
+WIDTH, HEIGHT= 800,600
+
+class Browser:
+    def __init__(self):
+        self.window= tkinter.Tk()
+        self.canvas= tkinter.Canvas(self.window,width=WIDTH,height=HEIGHT)
+        self.canvas.pack()
+        self.scroll=0
+        self.window.bind("<Down>", self.scrolldown)
+        self.window.bind("<Up>", self.scrollup)
+        self.window.bind("<Button-4>", self.scrollup)
+        self.window.bind("<MouseWheel>", self.on_mousewheel)
+        self.window.bind("<Button-5>", self.scrolldown)
+    
+    
+    def on_mousewheel(self,e):
+        delta= -1 * (e.delta//120)
+        self.scroll= max(0, self.scroll+ delta* SCROLL_STEP)
+        self.draw() 
+      
+
+    def scrollup(self,e):
+        self.scroll = max(0, self.scroll-SCROLL_STEP)
+        self.draw()
+        
+    def scrolldown(self,e):
+        self.scroll += SCROLL_STEP
+        self.draw()
+    
+    def draw(self):
+        self.canvas.delete("all")
+        for x,y,c in self.display_list:
+            if y > self.scroll + HEIGHT: continue
+            if y + VSTEP < self.scroll: continue
+            
+            self.canvas.create_text(x,y-self.scroll,text=c)
+            
+    def load(self,url):
+        body= url.request()
+        text=lex(body)
+        self.display_list= layout(text)
+        self.draw()
+        
+            
     
 if __name__=="__main__":
     import sys
