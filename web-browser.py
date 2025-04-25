@@ -58,7 +58,8 @@ class URL:
         return content
     
     
-def show(body):
+def lex(body):
+    text=""
     in_tag= False
     for c in body:
         if c=="<":
@@ -66,8 +67,8 @@ def show(body):
         elif c==">":
             in_tag=False
         elif not in_tag:
-            print(c,end="")
-            
+            text +=c
+    return text            
 
 WIDTH, HEIGHT= 800,600
 class Browser:
@@ -80,11 +81,17 @@ class Browser:
         
     def load(self,url):
         body= url.request()
-        show(body)
-        self.canvas.create_rectangle(10,20,400,300)
-        self.canvas.create_oval(100,100,150,150)
-        self.canvas.create_text(200,150, text="hi there")
+        text=lex(body)
         
+        HSTEP, VSTEP= 13,18
+        cursor_x, cursor_y= HSTEP, VSTEP
+        
+        for c in text:
+            self.canvas.create_text(cursor_x,cursor_y,text=c)
+            cursor_x += HSTEP
+            if cursor_x>= WIDTH-HSTEP:
+                cursor_y += VSTEP
+                cursor_x = HSTEP
     
 if __name__=="__main__":
     import sys
